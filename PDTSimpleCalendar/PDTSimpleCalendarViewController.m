@@ -31,6 +31,8 @@ static const NSCalendarUnit kCalendarUnitYMD = NSCalendarUnitYear | NSCalendarUn
 //Number of days per week
 @property (nonatomic, assign) NSUInteger daysPerWeek;
 
+@property (nonatomic, assign) int selectedCount;
+
 @end
 
 
@@ -95,6 +97,13 @@ static const NSCalendarUnit kCalendarUnitYMD = NSCalendarUnitYear | NSCalendarUn
     if (self.selectedDate) {
         [self.collectionViewLayout invalidateLayout];
     }
+//    [self scrollToDate:self.lastDate animated:YES];
+}
+
+- (void)viewDidAppear:(BOOL)animated
+{
+    [super viewDidAppear:animated];
+    [self scrollToDate:self.lastDate animated:YES];
 }
 
 #pragma mark - Accessors
@@ -296,6 +305,21 @@ static const NSCalendarUnit kCalendarUnitYMD = NSCalendarUnitYear | NSCalendarUn
 
     [self.view addConstraints:[NSLayoutConstraint constraintsWithVisualFormat:@"|[overlayView]|" options:NSLayoutFormatAlignAllTop metrics:nil views:viewsDictionary]];
     [self.view addConstraints:[NSLayoutConstraint constraintsWithVisualFormat:@"V:|[overlayView(==overlayViewHeight)]" options:NSLayoutFormatAlignAllTop metrics:metricsDictionary views:viewsDictionary]];
+    
+    UIBarButtonItem *rightItem = [[UIBarButtonItem alloc] initWithTitle:@"确定" style:UIBarButtonItemStylePlain target:self action:@selector(BackToReporiList)];
+    
+    self.navigationItem.rightBarButtonItem = rightItem;
+}
+
+-(void)BackToReporiList{
+    if (self.selectedDate == nil || self.selectedDateSecond == nil) {
+        self.selectedDate = [NSDate dateWithTimeIntervalSinceNow:0];
+        self.selectedDateSecond = self.selectedDate;
+    }
+    if (self.delegate && [self.delegate respondsToSelector:@selector(simpleCalendarViewControllerBackToPraviousVC:)]) {
+        [self.delegate simpleCalendarViewControllerBackToPraviousVC:self];
+    }
+    [self.navigationController popViewControllerAnimated:YES];
 }
 
 #pragma mark - Rotation Handling
@@ -397,7 +421,39 @@ static const NSCalendarUnit kCalendarUnitYMD = NSCalendarUnitYear | NSCalendarUn
 
 - (void)collectionView:(UICollectionView *)collectionView didSelectItemAtIndexPath:(NSIndexPath *)indexPath
 {
-    self.selectedDate = [self dateForCellAtIndexPath:indexPath];
+    self.selectedCount ++;
+    switch (self.selectedCount) {
+        case 1:
+        {
+            self.selectedDate = [self dateForCellAtIndexPath:indexPath];
+            self.selectedDateSecond = self.selectedDate;
+            PDTSimpleCalendarViewCell *test = (PDTSimpleCalendarViewCell *)[self.collectionView cellForItemAtIndexPath:[self indexPathForCellAtDate:self.selectedDate]];
+            test.selected = YES;
+        }
+            break;
+        case 2:
+        {
+            self.selectedDateSecond = self.selectedDate;
+            self.selectedDate = [self dateForCellAtIndexPath:indexPath];
+            [self makeSelectedDateChangeColorsWithSeledtedDate:self.selectedDate SelectedDatePravious:self.selectedDateSecond isSelected:YES];
+        }
+            break;
+        case 3:
+        {
+            self.selectedDateThird = self.selectedDateSecond;
+            self.selectedDateSecond = self.selectedDate;
+            self.selectedDate = [self dateForCellAtIndexPath:indexPath];
+            [self makeSelectedDateChangeColorsWithSeledtedDate:self.selectedDateSecond SelectedDatePravious:self.selectedDateThird isSelected:NO];
+            PDTSimpleCalendarViewCell *test = (PDTSimpleCalendarViewCell *)[self.collectionView cellForItemAtIndexPath:[self indexPathForCellAtDate:self.selectedDate]];
+            test.selected = YES;
+            self.selectedCount = 1;
+        }
+            break;
+        default:
+            self.selectedCount = 1;
+            break;
+    }
+//    NSLog(@"count :%d",self.selectedCount);
 }
 
 
@@ -605,6 +661,28 @@ static const NSInteger kFirstDay = 1;
     }
 
     return nil;
+}
+
+#pragma mark - selected Date method
+- (void)makeSelectedDateChangeColorsWithSeledtedDate:(NSDate *)selectedDate SelectedDatePravious:(NSDate *)selectedDateSecond isSelected:(BOOL)isSelected{
+    NSCalendar *calendar = [[NSCalendar alloc] initWithCalendarIdentifier:NSGregorianCalendar];
+    unsigned int unitFlag = NSDayCalendarUnit;
+    NSDateComponents *components = [calendar components:unitFlag fromDate:selectedDate toDate:selectedDateSecond options:0];
+    NSInteger days = [components day];
+//    NSLog(@"day:%ld",days);
+    
+    long int count = labs(days);
+    for (int i = 0 ; i < count; i ++) {
+        int interval;
+        if (days < 0) {
+            interval = i*86400;
+        }else{
+            interval = -i*86400;
+        }
+        PDTSimpleCalendarViewCell *test = (PDTSimpleCalendarViewCell *)[self.collectionView cellForItemAtIndexPath:[self indexPathForCellAtDate:[selectedDateSecond dateByAddingTimeInterval:interval]]];
+        test.selected = isSelected;
+        
+    }
 }
 
 @end

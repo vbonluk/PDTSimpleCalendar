@@ -43,6 +43,10 @@
  */
 @property (nonatomic, strong) NSDate *selectedDate;
 
+@property (nonatomic, strong) NSDate *selectedDateSecond;
+
+@property (nonatomic, strong) NSDate *selectedDateThird;
+
 /** @name Customizing Appearance */
 
 /**
@@ -147,5 +151,7 @@
  *  @param date       the date (Midnight GMT)
  */
 - (UIColor *)simpleCalendarViewController:(PDTSimpleCalendarViewController *)controller textColorForDate:(NSDate *)date;
+
+- (void)simpleCalendarViewControllerBackToPraviousVC:(PDTSimpleCalendarViewController *)controller;
 
 @end;
